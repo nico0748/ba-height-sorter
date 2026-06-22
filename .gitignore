@@ -1,0 +1,8 @@
+node_modules
+dist
+.DS_Store
+*.log
+
+# Vite が生成する一時ファイル
+vite.config.js.timestamp-*
+vite.config.*.timestamp-*
