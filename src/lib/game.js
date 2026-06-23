@@ -65,11 +65,20 @@ export function makeSortRound(difficulty, count) {
   }
 
   if (difficulty === 'hard') {
-    // ソート済み配列から連続する n 名の窓を取る → 身長が密集（同値も多い）
-    const maxStart = ALL.length - n
-    const start = Math.floor(Math.random() * (maxStart + 1))
-    const picked = ALL.slice(start, start + n)
-    return finalizeSort(picked)
+    // ソート済み配列から連続する n 名の窓を取る → 身長が密集（同値も多い）。
+    // ただし全員同じ身長だと判別不能なので「異なる身長が3種類以上」を必須にする。
+    const need = Math.min(3, n)
+    const distinct = (arr) => new Set(arr.map((s) => s.height)).size
+    const windows = []
+    for (let start = 0; start <= ALL.length - n; start++) {
+      const w = ALL.slice(start, start + n)
+      if (distinct(w) >= need) windows.push(w)
+    }
+    if (windows.length) {
+      return finalizeSort(windows[Math.floor(Math.random() * windows.length)])
+    }
+    // フォールバック（通常到達しない）
+    return finalizeSort(pickRandom(ALL, n))
   }
 
   // normal

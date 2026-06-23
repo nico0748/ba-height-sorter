@@ -23,12 +23,14 @@ export default function SortGame({ round, onScore, onNext, isLast = false }) {
 
   const correct = checked && checkSort(order)
 
-  // 各カードの正誤（昇順の連続性で判定）
+  // 本来あるべき並び（身長昇順）の各位置の身長
+  const targetHeights = order.map((s) => s.height).sort((a, b) => a - b)
+
+  // 各カードの正誤：その位置に本来あるべき身長と一致するかで判定。
+  // 同身長は入れ替え可能なので、身長が一致していれば正解扱い。
   const cardState = (i) => {
     if (!checked) return null
-    const okPrev = i === 0 || order[i - 1].height <= order[i].height
-    const okNext = i === order.length - 1 || order[i].height <= order[i + 1].height
-    return okPrev && okNext ? 'correct' : 'wrong'
+    return order[i].height === targetHeights[i] ? 'correct' : 'wrong'
   }
 
   return (

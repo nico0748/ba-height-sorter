@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import SortGame from './components/SortGame'
 import GroupGame from './components/GroupGame'
 import HomeSidebar from './components/HomeSidebar'
+import Icon from './components/Icon'
 import { makeSortRound, makeGroupRound, ALL } from './lib/game'
 import {
   addRecord,
@@ -244,7 +245,7 @@ function Setup({
   return (
     <div className="home">
       <main className="setup">
-      <Section title="ユーザー名">
+      <Section title="ユーザー名" icon="user">
         <input
           className="name-input"
           type="text"
@@ -255,7 +256,7 @@ function Setup({
         />
       </Section>
 
-      <Section title="プレイスタイル">
+      <Section title="プレイスタイル" icon="style">
         <div className="opts">
           {MODES.map((m) => (
             <button
@@ -270,7 +271,7 @@ function Setup({
         </div>
       </Section>
 
-      <Section title="難易度（出題人数）">
+      <Section title="難易度（出題人数）" icon="difficulty">
         <div className="opts">
           {DIFFS.map((d) => (
             <button
@@ -287,7 +288,7 @@ function Setup({
         </div>
       </Section>
 
-      <Section title="問題数">
+      <Section title="問題数" icon="count">
         <div className="opts counts">
           {QCOUNTS.map((c) => (
             <button
@@ -341,7 +342,7 @@ function ResultScreen({
   const { timeMs, correct, total, allCorrect, rank } = result
   return (
     <main className="setup">
-      <Section title="結果">
+      <Section title="結果" icon="flag">
         <div className="result-card">
           <div className="result-time">{formatTime(timeMs)}</div>
           <div className="result-sub">
@@ -386,7 +387,7 @@ function RankingScreen({ initial, onBack }) {
 
   return (
     <main className="setup">
-      <Section title="ランキング（クリアタイム）">
+      <Section title="ランキング（クリアタイム）" icon="trophy">
         <div className="rank-filters">
           <Pills items={MODES} value={mode} onChange={setMode} />
           <Pills items={DIFFS} value={diff} onChange={setDiff} />
@@ -437,10 +438,15 @@ function Pills({ items, value, onChange }) {
   )
 }
 
-function Section({ title, children }) {
+function Section({ title, icon, children }) {
   return (
     <section className="cfg">
-      <h2>{title}</h2>
+      <h2>
+        <span className="h2-ico">
+          <Icon name={icon} />
+        </span>
+        {title}
+      </h2>
       {children}
     </section>
   )
