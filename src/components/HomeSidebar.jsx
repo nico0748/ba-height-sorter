@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { BAND_STATS, bandLabel, ALL } from '../lib/game'
 import { getRanking, formatTime } from '../lib/ranking'
 import BandModal from './BandModal'
+import Icon from './Icon'
 
 const MAX = Math.max(...BAND_STATS.map((b) => b.count))
 
@@ -14,7 +15,9 @@ export default function HomeSidebar({ mode, diff, qCount, modeLabel, diffLabel }
     <aside className="home-side">
       <section className="side-card">
         <h2>
-          <span className="bar" />
+          <span className="h2-ico">
+            <Icon name="stats" />
+          </span>
           身長分布
         </h2>
         <ul className="dist">
@@ -43,7 +46,9 @@ export default function HomeSidebar({ mode, diff, qCount, modeLabel, diffLabel }
 
       <section className="side-card">
         <h2>
-          <span className="bar" />
+          <span className="h2-ico">
+            <Icon name="stopwatch" />
+          </span>
           ベストタイム
         </h2>
         <p className="side-sub">

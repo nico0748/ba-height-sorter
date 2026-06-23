@@ -28,9 +28,11 @@ npm run preview  # ビルド結果をプレビュー
 
 ## データについて
 
-生徒データ（ID・名前・身長）は [SchaleDB](https://schaledb.com) から、アイコンが
-存在する 192 名分を抽出して `src/data/students.json` に同梱しています。アイコン画像は
-SchaleDB の公式 URL (`https://schaledb.com/images/student/icon/{id}.webp`) を参照します。
+生徒データ（ID・名前・身長）は [SchaleDB](https://schaledb.com) の日本版実装済み生徒
+から、**ノーマル版のみ** 142 名分を抽出して `src/data/students.json` に同梱しています
+（水着・正月などの別衣装、シロコ＊テラー等の特殊形態、身長未設定のコラボ生徒は除外）。
+アイコン画像は SchaleDB の公式 URL (`https://schaledb.com/images/student/icon/{id}.webp`)
+を参照します。
 
 身長は `CharHeightMetric`（例: `160cm`）の数値を使用しています。同一身長の生徒が
 複数いる場合、並べ替えモードでは同値どうしの順序を問わず正解として扱います。
