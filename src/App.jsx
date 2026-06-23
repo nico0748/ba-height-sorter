@@ -119,29 +119,31 @@ export default function App() {
 
   return (
     <div className="app">
-      <header className="topbar">
-        <div className="brand">
-          <span className="brand-mark" aria-hidden="true">
-            <span className="halo" />
-            <span className="logo">KL</span>
-          </span>
-          <span className="brand-text">
-            <h1 className="title-jp">キヴォトス・ラインアップ！</h1>
-            <span className="title-en">KIVOTOS LINEUP — 身長ソート</span>
-          </span>
-        </div>
-        {view === 'play' && session && (
-          <div className="scoreboard">
-            <Timer startTime={session.startTime} endTime={session.endTime} />
-            <span>
-              問題 {session.idx + 1} / {session.total}
+      {view !== 'setup' && (
+        <header className="topbar">
+          <div className="brand">
+            <span className="brand-mark" aria-hidden="true">
+              <span className="halo" />
+              <span className="logo">KL</span>
             </span>
-            <button className="ghost-btn" onClick={quit}>
-              中断
-            </button>
+            <span className="brand-text">
+              <h1 className="title-jp">キヴォトス・ラインアップ！</h1>
+              <span className="title-en">KIVOTOS LINEUP — 身長ソート</span>
+            </span>
           </div>
-        )}
-      </header>
+          {view === 'play' && session && (
+            <div className="scoreboard">
+              <Timer startTime={session.startTime} endTime={session.endTime} />
+              <span>
+                問題 {session.idx + 1} / {session.total}
+              </span>
+              <button className="ghost-btn" onClick={quit}>
+                中断
+              </button>
+            </div>
+          )}
+        </header>
+      )}
 
       {view === 'setup' && (
         <Setup
@@ -153,7 +155,7 @@ export default function App() {
 
       {view === 'play' && session && (
         <main className="play">
-          <div className="round-meta">
+          <div className={'round-meta rm-' + diff}>
             {labelOf(MODES, mode)}・{labelOf(DIFFS, diff)}（{countOf(mode, diff)}
             名）・全
             {session.total}問
@@ -230,6 +232,22 @@ function Timer({ startTime, endTime }) {
   return <span className="timer">⏱ {formatTime((endTime ?? now) - startTime)}</span>
 }
 
+const NAV = [
+  { id: null, icon: 'home', label: 'ホーム' },
+  { id: 'sec-play', icon: 'style', label: '挑戦設定' },
+  { id: 'sec-stats', icon: 'stats', label: '身長分布' },
+  { id: 'sec-rank', icon: 'stopwatch', label: 'ベストタイム' },
+  { id: 'sec-howto', icon: 'flag', label: '遊び方' },
+]
+
+const goTo = (id) => {
+  if (!id) {
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+    return
+  }
+  document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+}
+
 function Setup({
   name,
   setName,
@@ -242,89 +260,193 @@ function Setup({
   onStart,
   onShowRanking,
 }) {
+  const ready = !!name.trim()
+
   return (
-    <div className="home">
-      <main className="setup">
-      <Section title="ユーザー名" icon="user">
-        <input
-          className="name-input"
-          type="text"
-          value={name}
-          maxLength={16}
-          placeholder="ランキングに表示する名前"
-          onChange={(e) => setName(e.target.value)}
-        />
-      </Section>
+    <div className="layout">
+      {/* ===== 左サイドバー ===== */}
+      <aside className="sidebar">
+        <div className="side-brand">
+          <span className="brand-mark" aria-hidden="true">
+            <span className="halo" />
+            <span className="logo">KL</span>
+          </span>
+          <span className="brand-text">
+            <span className="side-brand-jp">キヴォトス・ラインアップ！</span>
+            <span className="side-brand-en">KIVOTOS LINEUP</span>
+          </span>
+        </div>
 
-      <Section title="プレイスタイル" icon="style">
-        <div className="opts">
-          {MODES.map((m) => (
-            <button
-              key={m.id}
-              className={'opt' + (mode === m.id ? ' active' : '')}
-              onClick={() => setMode(m.id)}
-            >
-              <b>{m.label}</b>
-              <span>{m.desc}</span>
+        <div className="cfg side-acc">
+          <div className="side-acc-h">先生のお名前</div>
+          <input
+            className="name-input"
+            type="text"
+            value={name}
+            maxLength={16}
+            placeholder="ニックネーム"
+            onChange={(e) => setName(e.target.value)}
+          />
+          <span className="hint">
+            ※ランキング表示用・この端末に記録されます
+          </span>
+        </div>
+
+        <nav className="side-nav">
+          {NAV.map((n) => (
+            <button key={n.label} onClick={() => goTo(n.id)}>
+              <span className="nav-ico">
+                <Icon name={n.icon} size={18} />
+              </span>
+              {n.label}
             </button>
           ))}
-        </div>
-      </Section>
+          <button onClick={onShowRanking}>
+            <span className="nav-ico">
+              <Icon name="trophy" size={18} />
+            </span>
+            ランキングを見る
+          </button>
+        </nav>
+      </aside>
 
-      <Section title="難易度（出題人数）" icon="difficulty">
-        <div className="opts">
-          {DIFFS.map((d) => (
+      {/* ===== メイン ===== */}
+      <main className="main">
+        <div className="hero">
+          <div className="hero-badge">KIVOTOS LINEUP</div>
+          <h1 className="hero-title">キヴォトス・ラインアップ！</h1>
+          <div className="hero-en">身長ソート＆グループ分けゲーム</div>
+          <p className="hero-lead">
+            ブルーアーカイブの生徒を身長順に並べたり、身長帯ごとに振り分けたり。
+            キヴォトスの先生として、生徒たちの身長を当てよう。
+          </p>
+          <div className="hero-tags">
+            <span>
+              <Icon name="user" size={15} />全{ALL.length}名から出題
+            </span>
+            <span>
+              <Icon name="difficulty" size={15} />難易度3段階
+            </span>
+            <span>
+              <Icon name="trophy" size={15} />端末ランキング
+            </span>
+          </div>
+          <button
+            className="hero-cta"
+            onClick={ready ? onStart : () => goTo('sec-play')}
+          >
+            <Icon name="flag" size={20} /> いますぐ挑戦する
+          </button>
+        </div>
+
+        {/* 挑戦設定 */}
+        <section className="cfg" id="sec-play">
+          <h2>
+            <span className="h2-ico">
+              <Icon name="style" />
+            </span>
+            挑戦設定
+          </h2>
+
+          <div className="set-block">
+            <div className="set-label">プレイスタイル</div>
+            <div className="opts">
+              {MODES.map((m) => (
+                <button
+                  key={m.id}
+                  className={'opt' + (mode === m.id ? ' active' : '')}
+                  onClick={() => setMode(m.id)}
+                >
+                  <b>{m.label}</b>
+                  <span>{m.desc}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="set-block">
+            <div className="set-label">難易度（出題人数）</div>
+            <div className="opts">
+              {DIFFS.map((d) => (
+                <button
+                  key={d.id}
+                  className={
+                    'opt opt-' + d.id + (diff === d.id ? ' active' : '')
+                  }
+                  onClick={() => setDiff(d.id)}
+                >
+                  <b>
+                    {d.label}（{countOf(mode, d.id)}名）
+                  </b>
+                  <span>{d.desc}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="set-block">
+            <div className="set-label">問題数</div>
+            <div className="opts counts">
+              {QCOUNTS.map((c) => (
+                <button
+                  key={c}
+                  className={'opt' + (qCount === c ? ' active' : '')}
+                  onClick={() => setQCount(c)}
+                >
+                  <b>{c}問</b>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="start-row">
             <button
-              key={d.id}
-              className={'opt' + (diff === d.id ? ' active' : '')}
-              onClick={() => setDiff(d.id)}
+              className="primary-btn big"
+              onClick={onStart}
+              disabled={!ready}
             >
-              <b>
-                {d.label}（{countOf(mode, d.id)}名）
-              </b>
-              <span>{d.desc}</span>
+              ▶ ゲームスタート
             </button>
-          ))}
-        </div>
-      </Section>
+            {!ready && (
+              <span className="hint">スタートには名前の入力が必要です。</span>
+            )}
+          </div>
+        </section>
 
-      <Section title="問題数" icon="count">
-        <div className="opts counts">
-          {QCOUNTS.map((c) => (
-            <button
-              key={c}
-              className={'opt' + (qCount === c ? ' active' : '')}
-              onClick={() => setQCount(c)}
-            >
-              <b>{c}問</b>
-            </button>
-          ))}
+        {/* 身長分布 ＋ ベストタイム */}
+        <div className="main-row">
+          <HomeSidebar
+            mode={mode}
+            diff={diff}
+            qCount={qCount}
+            modeLabel={labelOf(MODES, mode)}
+            diffLabel={labelOf(DIFFS, diff)}
+          />
         </div>
-      </Section>
 
-      <div className="setup-actions">
-        <button
-          className="primary-btn big"
-          onClick={onStart}
-          disabled={!name.trim()}
-        >
-          スタート
-        </button>
-        <button className="ghost-btn" onClick={onShowRanking}>
-          ランキングを見る
-        </button>
-      </div>
-      {!name.trim() && (
-        <p className="hint">スタートにはユーザー名の入力が必要です。</p>
-      )}
+        {/* 遊び方 */}
+        <section className="cfg" id="sec-howto">
+          <h2>
+            <span className="h2-ico">
+              <Icon name="flag" />
+            </span>
+            遊び方
+          </h2>
+          <ol className="howto">
+            <li>
+              <b>名前を入力</b>して、プレイスタイル・難易度・問題数を選びます。
+            </li>
+            <li>
+              <b>並べ替え</b>は生徒を低い→高い身長順に、
+              <b>グループ分け</b>は身長帯（140cm台など）ごとに振り分けます。
+            </li>
+            <li>
+              <b>答え合わせ</b>で正誤を判定。全問正解ならクリアタイムが
+              ランキングに登録されます。
+            </li>
+          </ol>
+        </section>
       </main>
-      <HomeSidebar
-        mode={mode}
-        diff={diff}
-        qCount={qCount}
-        modeLabel={labelOf(MODES, mode)}
-        diffLabel={labelOf(DIFFS, diff)}
-      />
     </div>
   )
 }

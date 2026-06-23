@@ -12,8 +12,8 @@ export default function HomeSidebar({ mode, diff, qCount, modeLabel, diffLabel }
   const [openBand, setOpenBand] = useState(null)
 
   return (
-    <aside className="home-side">
-      <section className="side-card">
+    <>
+      <section className="side-card" id="sec-stats">
         <h2>
           <span className="h2-ico">
             <Icon name="stats" />
@@ -44,7 +44,7 @@ export default function HomeSidebar({ mode, diff, qCount, modeLabel, diffLabel }
         <p className="side-foot">タップで数直線表示 ／ 収録 {ALL.length} 名</p>
       </section>
 
-      <section className="side-card">
+      <section className="side-card" id="sec-rank">
         <h2>
           <span className="h2-ico">
             <Icon name="stopwatch" />
@@ -72,6 +72,6 @@ export default function HomeSidebar({ mode, diff, qCount, modeLabel, diffLabel }
       {openBand != null && (
         <BandModal band={openBand} onClose={() => setOpenBand(null)} />
       )}
-    </aside>
+    </>
   )
 }

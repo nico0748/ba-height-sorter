@@ -48,41 +48,77 @@ const pickRandom = (arr, n) => shuffle(arr).slice(0, n)
 //   normal : ランダム
 //   hard   : 身長が近い（=見分けにくい）生徒を選ぶ
 // ───────────────────────────────────────────
+const distinctCount = (arr) => new Set(arr.map((s) => s.height)).size
+
+// pool から n 名選び、必ず need 種類以上の身長を含める。
+// 1) need グループ（身長別）から1名ずつ取り種類数を確保
+// 2) 残りは pool からランダムに補充
+function pickWithDistinct(pool, n, need) {
+  const byHeight = new Map()
+  for (const s of pool) {
+    if (!byHeight.has(s.height)) byHeight.set(s.height, [])
+    byHeight.get(s.height).push(s)
+  }
+  const heights = shuffle([...byHeight.keys()])
+  const picked = []
+  const used = new Set()
+  for (const h of heights) {
+    if (picked.length >= need) break
+    const cand = byHeight.get(h)[Math.floor(Math.random() * byHeight.get(h).length)]
+    picked.push(cand)
+    used.add(cand.id)
+  }
+  const rest = shuffle(pool.filter((s) => !used.has(s.id)))
+  for (const s of rest) {
+    if (picked.length >= n) break
+    picked.push(s)
+  }
+  return picked.slice(0, n)
+}
+
 export function makeSortRound(difficulty, count) {
   const n = Math.min(count, ALL.length)
+  // 出題人数 - 2 種類以上の身長を必ず含める（最低1）
+  const need = Math.min(Math.max(1, n - 2), distinctCount(ALL))
 
   if (difficulty === 'easy') {
-    // 身長レンジ全体を n 分割し、各区間から1名ずつ → 差が大きくなる
-    const picked = []
-    const seg = ALL.length / n
-    for (let i = 0; i < n; i++) {
-      const start = Math.floor(i * seg)
-      const end = Math.floor((i + 1) * seg)
-      const slice = ALL.slice(start, Math.max(end, start + 1))
-      picked.push(slice[Math.floor(Math.random() * slice.length)])
+    // 身長レンジ全体を n 分割し各区間から1名ずつ → 差が大きい。
+    const segPick = () => {
+      const picked = []
+      const seg = ALL.length / n
+      for (let i = 0; i < n; i++) {
+        const start = Math.floor(i * seg)
+        const end = Math.floor((i + 1) * seg)
+        const slice = ALL.slice(start, Math.max(end, start + 1))
+        picked.push(slice[Math.floor(Math.random() * slice.length)])
+      }
+      return picked
     }
+    let picked = segPick()
+    for (let t = 0; t < 60 && distinctCount(picked) < need; t++) picked = segPick()
+    if (distinctCount(picked) < need) picked = pickWithDistinct(ALL, n, need)
     return finalizeSort(picked)
   }
 
   if (difficulty === 'hard') {
-    // ソート済み配列から連続する n 名の窓を取る → 身長が密集（同値も多い）。
-    // ただし全員同じ身長だと判別不能なので「異なる身長が3種類以上」を必須にする。
-    const need = Math.min(3, n)
-    const distinct = (arr) => new Set(arr.map((s) => s.height)).size
+    // ソート済み配列から連続する n 名の窓 → 身長が密集。
+    // ただし need 種類以上の身長を含む窓に限定する。
     const windows = []
     for (let start = 0; start <= ALL.length - n; start++) {
       const w = ALL.slice(start, start + n)
-      if (distinct(w) >= need) windows.push(w)
+      if (distinctCount(w) >= need) windows.push(w)
     }
     if (windows.length) {
       return finalizeSort(windows[Math.floor(Math.random() * windows.length)])
     }
-    // フォールバック（通常到達しない）
-    return finalizeSort(pickRandom(ALL, n))
+    return finalizeSort(pickWithDistinct(ALL, n, need))
   }
 
   // normal
-  return finalizeSort(pickRandom(ALL, n))
+  let picked = pickRandom(ALL, n)
+  for (let t = 0; t < 60 && distinctCount(picked) < need; t++) picked = pickRandom(ALL, n)
+  if (distinctCount(picked) < need) picked = pickWithDistinct(ALL, n, need)
+  return finalizeSort(picked)
 }
 
 function finalizeSort(picked) {
