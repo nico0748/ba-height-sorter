@@ -1,11 +1,14 @@
+import { useState } from 'react'
 import { BAND_STATS, bandLabel, ALL } from '../lib/game'
 import { getRanking, formatTime } from '../lib/ranking'
+import BandModal from './BandModal'
 
 const MAX = Math.max(...BAND_STATS.map((b) => b.count))
 
 // modeLabel/diffLabel: 表示用のラベル文字列
 export default function HomeSidebar({ mode, diff, qCount, modeLabel, diffLabel }) {
   const top = getRanking(mode, diff, qCount).slice(0, 3)
+  const [openBand, setOpenBand] = useState(null)
 
   return (
     <aside className="home-side">
@@ -16,19 +19,26 @@ export default function HomeSidebar({ mode, diff, qCount, modeLabel, diffLabel }
         </h2>
         <ul className="dist">
           {BAND_STATS.map(({ band, count }) => (
-            <li key={band} className="dist-row">
-              <span className="dist-label">{bandLabel(band)}</span>
-              <span className="dist-track">
-                <span
-                  className="dist-fill"
-                  style={{ width: `${(count / MAX) * 100}%` }}
-                />
-              </span>
-              <span className="dist-count">{count}</span>
+            <li key={band}>
+              <button
+                type="button"
+                className="dist-row"
+                onClick={() => setOpenBand(band)}
+                title={`${bandLabel(band)}の生徒を数直線で見る`}
+              >
+                <span className="dist-label">{bandLabel(band)}</span>
+                <span className="dist-track">
+                  <span
+                    className="dist-fill"
+                    style={{ width: `${(count / MAX) * 100}%` }}
+                  />
+                </span>
+                <span className="dist-count">{count}</span>
+              </button>
             </li>
           ))}
         </ul>
-        <p className="side-foot">収録 {ALL.length} 名</p>
+        <p className="side-foot">タップで数直線表示 ／ 収録 {ALL.length} 名</p>
       </section>
 
       <section className="side-card">
@@ -53,6 +63,10 @@ export default function HomeSidebar({ mode, diff, qCount, modeLabel, diffLabel }
           </ol>
         )}
       </section>
+
+      {openBand != null && (
+        <BandModal band={openBand} onClose={() => setOpenBand(null)} />
+      )}
     </aside>
   )
 }

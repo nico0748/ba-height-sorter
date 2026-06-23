@@ -22,6 +22,13 @@ export const BAND_STATS = (() => {
     .map(([band, count]) => ({ band, count }))
 })()
 
+// 指定した身長帯（band=140 など）の生徒を、身長→DefaultOrder順で返す
+export function studentsInBand(band) {
+  return ALL.filter((s) => heightBand(s.height) === band).sort(
+    (a, b) => a.height - b.height || a.id - b.id,
+  )
+}
+
 // 配列シャッフル（非破壊）
 export function shuffle(arr) {
   const a = [...arr]
