@@ -10,6 +10,18 @@ export const ALL = [...studentsData].sort((a, b) => a.height - b.height)
 export const heightBand = (h) => Math.floor(h / 10) * 10 // 128 -> 120, 155 -> 150
 export const bandLabel = (band) => `${band}cm台`
 
+// 身長帯ごとの収録人数（昇順）。ホーム画面の分布グラフ等で使用。
+export const BAND_STATS = (() => {
+  const m = new Map()
+  for (const s of ALL) {
+    const b = heightBand(s.height)
+    m.set(b, (m.get(b) || 0) + 1)
+  }
+  return [...m.entries()]
+    .sort((a, b) => a[0] - b[0])
+    .map(([band, count]) => ({ band, count }))
+})()
+
 // 配列シャッフル（非破壊）
 export function shuffle(arr) {
   const a = [...arr]

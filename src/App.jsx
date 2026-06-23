@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import SortGame from './components/SortGame'
 import GroupGame from './components/GroupGame'
+import HomeSidebar from './components/HomeSidebar'
 import { makeSortRound, makeGroupRound, ALL } from './lib/game'
 import {
   addRecord,
@@ -15,16 +16,21 @@ const MODES = [
   { id: 'group', label: 'グループ分け', desc: '身長帯（140cm台など）に振り分ける' },
 ]
 
-// 難易度ごとに出題人数を固定
 const DIFFS = [
-  { id: 'easy', label: 'Easy', count: 4, desc: '4名・身長差が大きく見分けやすい' },
-  { id: 'normal', label: 'Normal', count: 6, desc: '6名・ランダム出題' },
-  { id: 'hard', label: 'Hard', count: 8, desc: '8名・身長が近く紛らわしい' },
+  { id: 'easy', label: 'Easy', desc: '身長差が大きく見分けやすい' },
+  { id: 'normal', label: 'Normal', desc: 'ランダム出題' },
+  { id: 'hard', label: 'Hard', desc: '身長が近く紛らわしい' },
 ]
+
+// プレイスタイルごとの「出題人数」を難易度に割り当てる
+const COUNTS = {
+  sort: { easy: 4, normal: 6, hard: 8 },
+  group: { easy: 10, normal: 20, hard: 30 },
+}
 
 const QCOUNTS = [1, 5, 10]
 
-const countOf = (diff) => DIFFS.find((d) => d.id === diff).count
+const countOf = (mode, diff) => COUNTS[mode][diff]
 const labelOf = (arr, id) => arr.find((x) => x.id === id)?.label ?? id
 
 export default function App() {
@@ -42,7 +48,9 @@ export default function App() {
   // result: { timeMs, correct, total, allCorrect, rank }
 
   const makeRound = (m, d) =>
-    m === 'sort' ? makeSortRound(d, countOf(d)) : makeGroupRound(d, countOf(d))
+    m === 'sort'
+      ? makeSortRound(d, countOf('sort', d))
+      : makeGroupRound(d, countOf('group', d))
 
   const start = () => {
     const cleanName = name.trim()
@@ -145,7 +153,8 @@ export default function App() {
       {view === 'play' && session && (
         <main className="play">
           <div className="round-meta">
-            {labelOf(MODES, mode)}・{labelOf(DIFFS, diff)}（{countOf(diff)}名）・全
+            {labelOf(MODES, mode)}・{labelOf(DIFFS, diff)}（{countOf(mode, diff)}
+            名）・全
             {session.total}問
           </div>
           {mode === 'sort' ? (
@@ -233,7 +242,8 @@ function Setup({
   onShowRanking,
 }) {
   return (
-    <main className="setup">
+    <div className="home">
+      <main className="setup">
       <Section title="ユーザー名">
         <input
           className="name-input"
@@ -269,7 +279,7 @@ function Setup({
               onClick={() => setDiff(d.id)}
             >
               <b>
-                {d.label}（{d.count}名）
+                {d.label}（{countOf(mode, d.id)}名）
               </b>
               <span>{d.desc}</span>
             </button>
@@ -306,7 +316,15 @@ function Setup({
       {!name.trim() && (
         <p className="hint">スタートにはユーザー名の入力が必要です。</p>
       )}
-    </main>
+      </main>
+      <HomeSidebar
+        mode={mode}
+        diff={diff}
+        qCount={qCount}
+        modeLabel={labelOf(MODES, mode)}
+        diffLabel={labelOf(DIFFS, diff)}
+      />
+    </div>
   )
 }
 
