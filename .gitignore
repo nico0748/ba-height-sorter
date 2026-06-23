@@ -3,6 +3,7 @@ dist
 .DS_Store
 *.log
 
-# Vite が生成する一時ファイル
+# Vite が生成する一時ファイル・キャッシュ
 vite.config.js.timestamp-*
 vite.config.*.timestamp-*
+.vite

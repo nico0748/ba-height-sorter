@@ -474,6 +474,103 @@ body::before {
 .foot-disclaimer { font-size: 11px; opacity: 0.9; }
 .foot a { color: var(--blue); font-weight: 700; }
 
+/* ───────────── ホーム2カラム（設定＋サイドパネル） ───────────── */
+.home {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 312px;
+  gap: 22px;
+  align-items: start;
+}
+.home-side {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  position: sticky;
+  top: 16px;
+}
+.side-card {
+  background: rgba(255, 255, 255, 0.78);
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  padding: 16px 16px 18px;
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(6px);
+}
+.side-card h2 {
+  font-size: 13px;
+  color: var(--blue);
+  margin: 0 0 12px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.side-card h2 .bar {
+  width: 6px;
+  height: 16px;
+  background: linear-gradient(var(--blue), var(--cyan));
+  border-radius: 3px;
+  transform: skewX(-12deg);
+}
+.side-sub { font-size: 12px; color: var(--muted); margin: -4px 0 12px; }
+.side-foot { font-size: 11px; color: var(--muted); margin: 10px 0 0; text-align: right; }
+.side-empty {
+  font-size: 12.5px;
+  color: var(--muted);
+  line-height: 1.6;
+  margin: 0;
+  padding: 6px 0;
+}
+
+/* 身長分布 */
+.dist { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 7px; }
+.dist-row { display: grid; grid-template-columns: 58px 1fr 26px; align-items: center; gap: 8px; }
+.dist-label { font-size: 11.5px; font-weight: 700; color: var(--ink); }
+.dist-track {
+  height: 12px;
+  background: rgba(47, 141, 255, 0.1);
+  border-radius: 999px;
+  overflow: hidden;
+}
+.dist-fill {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, var(--blue), var(--cyan));
+  border-radius: 999px;
+}
+.dist-count { font-size: 11.5px; font-weight: 800; color: var(--blue-deep); text-align: right; }
+
+/* ベストタイム */
+.besttimes { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.bt-row {
+  display: grid;
+  grid-template-columns: 24px 1fr auto;
+  align-items: center;
+  gap: 10px;
+  background: var(--panel-2);
+  border-radius: 11px;
+  padding: 8px 12px;
+}
+.bt-rank {
+  width: 22px; height: 22px;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 50%;
+  background: var(--line);
+  color: var(--blue-ink);
+  font-size: 12px; font-weight: 800;
+}
+.bt-1 .bt-rank { background: var(--gold); color: #5a4500; }
+.bt-2 .bt-rank { background: #cdd9e8; color: #41526b; }
+.bt-3 .bt-rank { background: #f0c89a; color: #6b4a23; }
+.bt-name { font-size: 13px; font-weight: 700; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bt-time { font-size: 13px; font-weight: 800; color: var(--blue-deep); font-variant-numeric: tabular-nums; }
+
+@media (max-width: 860px) {
+  .home { grid-template-columns: 1fr; }
+  .home-side { position: static; }
+}
+
 @media (max-width: 560px) {
   .title-jp { font-size: 21px; }
   .result-time { font-size: 42px; }
