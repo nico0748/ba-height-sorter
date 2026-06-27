@@ -1,11 +1,39 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import StudentCard from './StudentCard'
 import { checkSort } from '../lib/game'
+import TimeBar from './TimeBar'
 
-export default function SortGame({ round, onScore, onNext, isLast = false }) {
+export default function SortGame({
+  round,
+  onScore,
+  onNext,
+  isLast = false,
+  timeLimit = null,
+}) {
   const [order, setOrder] = useState(round.items)
   const [dragIndex, setDragIndex] = useState(null)
   const [checked, setChecked] = useState(false)
+  const [timeLeft, setTimeLeft] = useState(timeLimit)
+
+  const submit = () => {
+    if (checked) return
+    setChecked(true)
+    onScore(checkSort(order), {
+      students: round.items.map((s) => ({ id: s.id, height: s.height })),
+      answer: order.map((s) => s.id),
+    })
+  }
+
+  // 制限時間のカウントダウン（timeLimit 指定時のみ）
+  useEffect(() => {
+    if (!timeLimit || checked) return
+    if (timeLeft <= 0) {
+      submit()
+      return
+    }
+    const id = setTimeout(() => setTimeLeft((t) => t - 1), 1000)
+    return () => clearTimeout(id)
+  }, [timeLimit, checked, timeLeft])
 
   const move = (from, to) => {
     if (to < 0 || to >= order.length || from === to) return
@@ -39,6 +67,10 @@ export default function SortGame({ round, onScore, onNext, isLast = false }) {
         カードを <b>左（低い）→ 右（高い）</b> の身長順に並べてください。
         ドラッグ＆ドロップ、または ◀ ▶ ボタンで移動できます。
       </p>
+
+      {timeLimit != null && !checked && (
+        <TimeBar timeLeft={timeLeft} timeLimit={timeLimit} />
+      )}
 
       <div className="sort-row">
         {order.map((s, i) => (
@@ -75,20 +107,17 @@ export default function SortGame({ round, onScore, onNext, isLast = false }) {
       </div>
 
       {!checked ? (
-        <button
-          className="primary-btn"
-          onClick={() => {
-            const ok = checkSort(order)
-            setChecked(true)
-            onScore(ok)
-          }}
-        >
+        <button className="primary-btn" onClick={submit}>
           答え合わせ
         </button>
       ) : (
         <div className="result">
           <p className={correct ? 'verdict ok' : 'verdict ng'}>
-            {correct ? '正解！ 🎉' : '残念… 並びが違います'}
+            {correct
+              ? '正解！ 🎉'
+              : timeLimit != null && timeLeft <= 0
+                ? '時間切れ… ⏱'
+                : '残念… 並びが違います'}
           </p>
           <button className="primary-btn" onClick={onNext}>
             {isLast ? '結果を見る →' : '次の問題 →'}

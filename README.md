@@ -26,6 +26,26 @@ npm run build    # dist/ にビルド
 npm run preview  # ビルド結果をプレビュー
 ```
 
+## PWA（スマホ対応）
+
+ホーム画面に追加して、ネイティブアプリのように全画面で遊べます。
+
+- `manifest.webmanifest`／アイコン（`public/icons/`）／Service Worker（`public/sw.js`）を同梱。
+- Service Worker はアプリ本体とアセットをキャッシュし、2回目以降や圏外でも起動可能。
+  生徒アイコン（SchaleDB CDN）も一度表示すればキャッシュされ、オフラインでも表示されます。
+- Service Worker は **本番ビルドでのみ** 有効です。`npm run build` 後に `npm run preview`
+  で確認してください（インストール・オフライン動作には HTTPS もしくは localhost 配信が必要）。
+- iPhone は Safari の「共有」→「ホーム画面に追加」、Android は Chrome の
+  「アプリをインストール」から追加できます。
+
+## オンラインランキング（任意）
+
+Supabase を使うと、全端末で共有されるランキングになります。`VITE_SUPABASE_URL` /
+`VITE_SUPABASE_ANON_KEY`（任意で `VITE_RECAPTCHA_SITE_KEY`）を設定するとオンライン化、
+未設定なら端末内ローカルランキングで動作します。サーバ側はスコアを検証して登録します
+（値域チェック・IPレート制限・reCAPTCHA・出題/回答/所要時間のサーバ検証・サーバ発行
+トークン・HMAC署名）。セットアップ手順は [`supabase/README.md`](./supabase/README.md) を参照。
+
 ## データについて
 
 生徒データ（ID・名前・身長）は [SchaleDB](https://schaledb.com) の日本版実装済み生徒

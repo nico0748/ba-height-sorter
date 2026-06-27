@@ -1,0 +1,9 @@
+# Supabase ローカル/デプロイ設定（抜粋）
+# これらの Edge Function は公開ゲーム用のため JWT 検証を無効化する
+# （内部では service role を使用し、検証は関数内で実施）。
+
+[functions.start-game]
+verify_jwt = false
+
+[functions.submit-score]
+verify_jwt = false

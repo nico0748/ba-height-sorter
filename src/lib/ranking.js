@@ -42,6 +42,31 @@ export function addRecord(mode, diff, qCount, { name, timeMs, date }) {
   return { rank: idx === -1 ? null : idx + 1, list: trimmed }
 }
 
+// ───────────────────────────────────────────
+// 解禁進捗（クリア済み難易度）の保存
+// ───────────────────────────────────────────
+const CLEARED_KEY = 'ba-height-sorter:cleared:v1'
+
+export function getCleared() {
+  try {
+    return new Set(JSON.parse(localStorage.getItem(CLEARED_KEY)) || [])
+  } catch {
+    return new Set()
+  }
+}
+
+// 難易度をクリア済みとして記録し、更新後の Set を返す
+export function markCleared(diff) {
+  const s = getCleared()
+  s.add(diff)
+  try {
+    localStorage.setItem(CLEARED_KEY, JSON.stringify([...s]))
+  } catch {
+    /* 無視 */
+  }
+  return s
+}
+
 export const loadLastName = () => {
   try {
     return localStorage.getItem(NAME_KEY) || ''

@@ -1,8 +1,15 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import StudentCard from './StudentCard'
 import { heightBand, bandLabel } from '../lib/game'
+import TimeBar from './TimeBar'
 
-export default function GroupGame({ round, onScore, onNext, isLast = false }) {
+export default function GroupGame({
+  round,
+  onScore,
+  onNext,
+  isLast = false,
+  timeLimit = null,
+}) {
   // studentId -> band(数値) または null（未分類プール）
   const [assign, setAssign] = useState(() =>
     Object.fromEntries(round.items.map((s) => [s.id, null])),
@@ -10,6 +17,7 @@ export default function GroupGame({ round, onScore, onNext, isLast = false }) {
   const [dragId, setDragId] = useState(null)
   const [selId, setSelId] = useState(null) // タップ操作用の選択中カード
   const [checked, setChecked] = useState(false)
+  const [timeLeft, setTimeLeft] = useState(timeLimit)
 
   const place = (id, band) => {
     if (id == null || checked) return
@@ -28,6 +36,26 @@ export default function GroupGame({ round, onScore, onNext, isLast = false }) {
   const allPlaced = pool.length === 0
   const isCorrect = (s) => assign[s.id] === heightBand(s.height)
   const score = round.items.filter(isCorrect).length
+
+  const submit = () => {
+    if (checked) return
+    setChecked(true)
+    onScore(score === round.items.length, {
+      students: round.items.map((s) => ({ id: s.id, height: s.height })),
+      answer: { ...assign },
+    })
+  }
+
+  // 制限時間のカウントダウン（timeLimit 指定時のみ）。0 で強制締め切り。
+  useEffect(() => {
+    if (!timeLimit || checked) return
+    if (timeLeft <= 0) {
+      submit()
+      return
+    }
+    const id = setTimeout(() => setTimeLeft((t) => t - 1), 1000)
+    return () => clearTimeout(id)
+  }, [timeLimit, checked, timeLeft])
 
   const cardProps = (s) => ({
     student: s,
@@ -51,6 +79,10 @@ export default function GroupGame({ round, onScore, onNext, isLast = false }) {
         各生徒を正しい <b>身長帯</b> のグループに入れてください。
         ドラッグ＆ドロップ、またはカードをタップ → 入れたい帯をタップ。
       </p>
+
+      {timeLimit != null && !checked && (
+        <TimeBar timeLeft={timeLeft} timeLimit={timeLimit} />
+      )}
 
       <div className="buckets">
         {round.bands.map((band) => (
@@ -100,14 +132,7 @@ export default function GroupGame({ round, onScore, onNext, isLast = false }) {
       </div>
 
       {!checked ? (
-        <button
-          className="primary-btn"
-          disabled={!allPlaced}
-          onClick={() => {
-            setChecked(true)
-            onScore(score === round.items.length)
-          }}
-        >
+        <button className="primary-btn" disabled={!allPlaced} onClick={submit}>
           {allPlaced ? '答え合わせ' : `未分類が残っています（${pool.length}）`}
         </button>
       ) : (
@@ -118,7 +143,11 @@ export default function GroupGame({ round, onScore, onNext, isLast = false }) {
             }
           >
             {score} / {round.items.length} 名 正解
-            {score === round.items.length ? ' 🎉' : ''}
+            {score === round.items.length
+              ? ' 🎉'
+              : timeLimit != null && timeLeft <= 0
+                ? '（時間切れ ⏱）'
+                : ''}
           </p>
           <button className="primary-btn" onClick={onNext}>
             {isLast ? '結果を見る →' : '次の問題 →'}
