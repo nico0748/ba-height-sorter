@@ -80,7 +80,12 @@ body::before {
   max-width: 1200px;
   margin: 0 auto;
   padding: 24px 20px 28px;
+  /* ノッチ等のセーフエリアを考慮（PWA/モバイル） */
+  padding-left: max(20px, env(safe-area-inset-left));
+  padding-right: max(20px, env(safe-area-inset-right));
+  padding-bottom: max(28px, env(safe-area-inset-bottom));
   min-height: 100vh;
+  min-height: 100dvh;
   display: flex;
   flex-direction: column;
 }
@@ -443,14 +448,81 @@ body::before {
 .opt-easy { --dc: #1f9e76; --dcbg: #e7f7f0; }
 .opt-normal { --dc: #2f8fb5; --dcbg: #e7f3fb; }
 .opt-hard { --dc: #e2693f; --dcbg: #ffeee7; }
-.opt-easy b, .opt-normal b, .opt-hard b { color: var(--dc); }
-.opt-easy:hover, .opt-normal:hover, .opt-hard:hover { border-color: var(--dc); }
-.opt-easy.active, .opt-normal.active, .opt-hard.active {
+.opt-extreme { --dc: #d99700; --dcbg: #fff5d6; }   /* Extreme: 黄色系統 */
+.opt-insane { --dc: #2f6fe0; --dcbg: #e9eeff; }    /* Insane: 超寒冷（氷）系 */
+.opt-easy b, .opt-normal b, .opt-hard b,
+.opt-extreme b, .opt-insane b { color: var(--dc); }
+.opt-easy:hover, .opt-normal:hover, .opt-hard:hover,
+.opt-extreme:hover, .opt-insane:hover { border-color: var(--dc); }
+.opt-easy.active, .opt-normal.active, .opt-hard.active,
+.opt-extreme.active, .opt-insane.active {
   border-color: var(--dc);
   background: var(--dcbg);
   box-shadow: 0 8px 18px color-mix(in srgb, var(--dc) 22%, transparent);
 }
-.opt-easy.active b, .opt-normal.active b, .opt-hard.active b { color: var(--dc); }
+.opt-easy.active b, .opt-normal.active b, .opt-hard.active b,
+.opt-extreme.active b, .opt-insane.active b { color: var(--dc); }
+/* Insane は氷のグラデで超寒冷感を演出 */
+.opt-insane.active {
+  background: linear-gradient(155deg, #eef3ff 0%, #dde8ff 55%, #cfe6f7 100%);
+}
+.opt-tl {
+  display: inline-block;
+  margin-top: 4px;
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--dc, var(--blue-deep));
+}
+
+/* 解禁通知 */
+.unlock-note {
+  margin: 4px 0 0;
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--accent-warm-deep);
+  background: var(--accent-warm-soft);
+  border: 1px solid #f3dca0;
+  border-radius: 10px;
+  padding: 8px 12px;
+}
+
+/* 制限時間バー */
+.timebar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  max-width: 420px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 8px 14px;
+  box-shadow: var(--shadow-sm);
+}
+.timebar-label {
+  font-family: 'Baloo 2', sans-serif;
+  font-variant-numeric: tabular-nums;
+  font-weight: 800;
+  font-size: 15px;
+  color: var(--blue-deep);
+  white-space: nowrap;
+}
+.timebar-track {
+  flex: 1;
+  height: 10px;
+  background: var(--c-5);
+  border-radius: 999px;
+  overflow: hidden;
+}
+.timebar-fill {
+  display: block;
+  height: 100%;
+  background: var(--blue);
+  border-radius: 999px;
+  transition: width 1s linear;
+}
+.timebar.danger .timebar-label { color: var(--ng); }
+.timebar.danger .timebar-fill { background: var(--ng); }
 
 /* ─── Buttons ─── */
 .primary-btn {
@@ -503,6 +575,8 @@ body::before {
 .round-meta.rm-easy { color: #1f9e76; background: #e7f7f0; border-color: #b7e6d4; }
 .round-meta.rm-normal { color: #2f8fb5; background: #e7f3fb; border-color: #bfdef0; }
 .round-meta.rm-hard { color: #e2693f; background: #ffeee7; border-color: #f6cbba; }
+.round-meta.rm-extreme { color: #b07d00; background: #fff5d6; border-color: #f0d488; }
+.round-meta.rm-insane { color: #2f6fe0; background: #e9eeff; border-color: #c4d2f7; }
 .game { display: flex; flex-direction: column; gap: 18px; align-items: flex-start; }
 .instruction {
   background: var(--panel);

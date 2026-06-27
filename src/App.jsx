@@ -10,29 +10,54 @@ import {
   formatTime,
   loadLastName,
   saveLastName,
+  getCleared,
+  markCleared,
 } from './lib/ranking'
+import {
+  remoteEnabled,
+  startGame,
+  submitScore,
+  fetchScores,
+} from './lib/ranking-remote'
 
 const MODES = [
   { id: 'sort', label: '並べ替え', desc: '身長順に低い→高いで並べる' },
   { id: 'group', label: 'グループ分け', desc: '身長帯（140cm台など）に振り分ける' },
 ]
 
+// requires: その難易度をクリアすると解禁される（未クリアなら非表示）
 const DIFFS = [
   { id: 'easy', label: 'Easy', desc: '身長差が大きく見分けやすい' },
   { id: 'normal', label: 'Normal', desc: 'ランダム出題' },
   { id: 'hard', label: 'Hard', desc: '身長が近く紛らわしい' },
+  { id: 'extreme', label: 'Extreme', desc: '人数増・高難度。Hardクリアで解禁', requires: 'hard' },
+  {
+    id: 'insane',
+    label: 'Insane',
+    desc: '時間制限あり。Extremeクリアで解禁',
+    requires: 'extreme',
+  },
 ]
 
 // プレイスタイルごとの「出題人数」を難易度に割り当てる
 const COUNTS = {
-  sort: { easy: 4, normal: 6, hard: 8 },
-  group: { easy: 10, normal: 20, hard: 30 },
+  sort: { easy: 4, normal: 6, hard: 8, extreme: 10, insane: 12 },
+  group: { easy: 10, normal: 20, hard: 30, extreme: 40, insane: 50 },
 }
+
+// 1問あたりの制限時間（秒）。null は制限なし。Insane 以降に付与。
+const TIME_LIMIT = {
+  sort: { insane: 45 },
+  group: { insane: 80 },
+}
+const timeLimitOf = (mode, diff) => TIME_LIMIT[mode]?.[diff] ?? null
 
 const QCOUNTS = [1, 5, 10]
 
 const countOf = (mode, diff) => COUNTS[mode][diff]
 const labelOf = (arr, id) => arr.find((x) => x.id === id)?.label ?? id
+// 解禁判定：requires が無い、またはクリア済みなら解放
+const isUnlocked = (d, cleared) => !d.requires || cleared.has(d.requires)
 
 export default function App() {
   const [view, setView] = useState('setup') // 'setup' | 'play' | 'result' | 'ranking'
@@ -47,16 +72,36 @@ export default function App() {
   // session: { mode, diff, qCount, total, idx, correct, startTime, endTime }
   const [result, setResult] = useState(null)
   // result: { timeMs, correct, total, allCorrect, rank }
+  const [cleared, setCleared] = useState(getCleared) // クリア済み難易度
+
+  // 選択中の難易度が未解禁になった場合は normal へ戻す
+  useEffect(() => {
+    if (!isUnlocked(DIFFS.find((d) => d.id === diff) ?? {}, cleared)) {
+      setDiff('normal')
+    }
+  }, [cleared, diff])
 
   const makeRound = (m, d) =>
     m === 'sort'
       ? makeSortRound(d, countOf('sort', d))
       : makeGroupRound(d, countOf('group', d))
 
-  const start = () => {
+  const start = async () => {
     const cleanName = name.trim()
     if (!cleanName) return
     saveLastName(cleanName)
+    // オンライン有効なら開始トークンを取得（失敗時はローカルのみで継続）
+    let token = null
+    let sig = null
+    if (remoteEnabled()) {
+      try {
+        const s = await startGame({ mode, diff, qCount })
+        token = s.token
+        sig = s.sig
+      } catch {
+        /* オフライン継続 */
+      }
+    }
     setSession({
       mode,
       diff,
@@ -64,6 +109,9 @@ export default function App() {
       total: qCount,
       idx: 0,
       correct: 0,
+      answers: [],
+      token,
+      sig,
       startTime: Date.now(),
       endTime: null,
     })
@@ -72,13 +120,14 @@ export default function App() {
     setView('play')
   }
 
-  // 各問の答え合わせ時に呼ばれる
-  const onScore = (won) => {
+  // 各問の答え合わせ時に呼ばれる。payload = { students, answer }（サーバ検証用）
+  const onScore = (won, payload) => {
     setSession((s) => {
       const isLast = s.idx + 1 >= s.total
       return {
         ...s,
         correct: s.correct + (won ? 1 : 0),
+        answers: payload ? [...s.answers, payload] : s.answers,
         // 最終問題の答え合わせ時点で計測を止める
         endTime: isLast ? Date.now() : s.endTime,
       }
@@ -87,7 +136,7 @@ export default function App() {
 
   // 「次の問題 / 結果を見る」押下時。副作用を伴うため updater 内ではなくここで実行する
   // （StrictMode で updater が二重呼び出しされ記録が重複するのを避ける）
-  const onNext = () => {
+  const onNext = async () => {
     const s = session
     if (!s) return
     if (s.idx + 1 < s.total) {
@@ -97,17 +146,60 @@ export default function App() {
       return
     }
     // セッション終了 → 結果集計
-    const timeMs = (s.endTime ?? Date.now()) - s.startTime
+    let timeMs = (s.endTime ?? Date.now()) - s.startTime
     const allCorrect = s.correct === s.total
     let rank = null
+    let unlocked = null // 今回クリアで新たに解禁された難易度ラベル
+    let online = false
     if (allCorrect) {
-      rank = addRecord(s.mode, s.diff, s.qCount, {
-        name: name.trim(),
-        timeMs,
-        date: new Date().toISOString(),
-      }).rank
+      // 解禁進捗（ローカル）
+      const before = getCleared()
+      const wasNew = !before.has(s.diff)
+      const next = markCleared(s.diff)
+      setCleared(new Set(next))
+      if (wasNew) {
+        const newly = DIFFS.find((d) => d.requires === s.diff)
+        if (newly) unlocked = newly.label
+      }
+      // オンライン登録（トークンがある＝開始がサーバ発行された場合）
+      if (s.token && remoteEnabled()) {
+        try {
+          const res = await submitScore({
+            token: s.token,
+            sig: s.sig,
+            name: name.trim(),
+            mode: s.mode,
+            diff: s.diff,
+            qCount: s.qCount,
+            questions: s.answers,
+          })
+          if (res.registered) {
+            rank = res.rank
+            if (typeof res.timeMs === 'number') timeMs = res.timeMs
+            online = true
+          }
+        } catch {
+          /* フォールバックへ */
+        }
+      }
+      // オフライン or 登録失敗時はローカルに記録
+      if (!online) {
+        rank = addRecord(s.mode, s.diff, s.qCount, {
+          name: name.trim(),
+          timeMs,
+          date: new Date().toISOString(),
+        }).rank
+      }
     }
-    setResult({ timeMs, correct: s.correct, total: s.total, allCorrect, rank })
+    setResult({
+      timeMs,
+      correct: s.correct,
+      total: s.total,
+      allCorrect,
+      rank,
+      unlocked,
+      online,
+    })
     setView('result')
   }
 
@@ -148,6 +240,7 @@ export default function App() {
       {view === 'setup' && (
         <Setup
           {...{ name, setName, mode, setMode, diff, setDiff, qCount, setQCount }}
+          cleared={cleared}
           onStart={start}
           onShowRanking={() => setView('ranking')}
         />
@@ -167,6 +260,7 @@ export default function App() {
               onScore={onScore}
               onNext={onNext}
               isLast={session.idx + 1 >= session.total}
+              timeLimit={timeLimitOf(mode, diff)}
             />
           ) : (
             <GroupGame
@@ -175,6 +269,7 @@ export default function App() {
               onScore={onScore}
               onNext={onNext}
               isLast={session.idx + 1 >= session.total}
+              timeLimit={timeLimitOf(mode, diff)}
             />
           )}
         </main>
@@ -257,10 +352,12 @@ function Setup({
   setDiff,
   qCount,
   setQCount,
+  cleared,
   onStart,
   onShowRanking,
 }) {
   const ready = !!name.trim()
+  const diffs = DIFFS.filter((d) => isUnlocked(d, cleared))
 
   return (
     <div className="layout">
@@ -325,10 +422,10 @@ function Setup({
               <Icon name="user" size={15} />全{ALL.length}名から出題
             </span>
             <span>
-              <Icon name="difficulty" size={15} />難易度3段階
+              <Icon name="difficulty" size={15} />難易度5段階
             </span>
             <span>
-              <Icon name="trophy" size={15} />端末ランキング
+              <Icon name="trophy" size={15} />オンラインランキング
             </span>
           </div>
           <button
@@ -367,7 +464,7 @@ function Setup({
           <div className="set-block">
             <div className="set-label">難易度（出題人数）</div>
             <div className="opts">
-              {DIFFS.map((d) => (
+              {diffs.map((d) => (
                 <button
                   key={d.id}
                   className={
@@ -379,6 +476,9 @@ function Setup({
                     {d.label}（{countOf(mode, d.id)}名）
                   </b>
                   <span>{d.desc}</span>
+                  {timeLimitOf(mode, d.id) != null && (
+                    <span className="opt-tl">⏱ {timeLimitOf(mode, d.id)}秒/問</span>
+                  )}
                 </button>
               ))}
             </div>
@@ -461,7 +561,7 @@ function ResultScreen({
   onSetup,
   onShowRanking,
 }) {
-  const { timeMs, correct, total, allCorrect, rank } = result
+  const { timeMs, correct, total, allCorrect, rank, unlocked, online } = result
   return (
     <main className="setup">
       <Section title="結果" icon="flag">
@@ -475,12 +575,17 @@ function ResultScreen({
             <p className="verdict ok">
               全問正解！ 🎉{' '}
               {rank
-                ? `ランキング ${rank} 位に登録しました`
+                ? `${online ? 'オンライン' : '端末内'}ランキング ${rank} 位に登録しました`
                 : 'ランキング圏外でした'}
             </p>
           ) : (
             <p className="verdict ng">
               全問正解ではないため、タイムはランキングに登録されません。
+            </p>
+          )}
+          {unlocked && (
+            <p className="unlock-note">
+              🔓 新しい難易度「{unlocked}」が解禁されました！
             </p>
           )}
         </div>
@@ -504,8 +609,37 @@ function RankingScreen({ initial, onBack }) {
   const [mode, setMode] = useState(initial.mode)
   const [diff, setDiff] = useState(initial.diff)
   const [qCount, setQCount] = useState(initial.qCount)
+  const [list, setList] = useState([])
+  const [loading, setLoading] = useState(false)
+  const [source, setSource] = useState('local') // 'remote' | 'local'
 
-  const list = getRanking(mode, diff, qCount)
+  useEffect(() => {
+    let alive = true
+    setLoading(true)
+    ;(async () => {
+      if (remoteEnabled()) {
+        try {
+          const rows = await fetchScores(mode, diff, qCount)
+          if (alive) {
+            setList(rows)
+            setSource('remote')
+            setLoading(false)
+            return
+          }
+        } catch {
+          /* フォールバック */
+        }
+      }
+      if (alive) {
+        setList(getRanking(mode, diff, qCount))
+        setSource('local')
+        setLoading(false)
+      }
+    })()
+    return () => {
+      alive = false
+    }
+  }, [mode, diff, qCount])
 
   return (
     <main className="setup">
@@ -520,7 +654,15 @@ function RankingScreen({ initial, onBack }) {
           />
         </div>
 
-        {list.length === 0 ? (
+        <p className="side-sub">
+          {loading
+            ? '読み込み中…'
+            : source === 'remote'
+              ? '🌐 オンラインランキング'
+              : '📱 この端末の記録（オフライン）'}
+        </p>
+
+        {!loading && list.length === 0 ? (
           <p className="hint">まだ記録がありません。全問正解でクリアすると登録されます。</p>
         ) : (
           <ol className="rank-list">

@@ -1,0 +1,32 @@
+{
+  "name": "キヴォトス・ラインアップ！",
+  "short_name": "ラインアップ",
+  "description": "ブルーアーカイブの生徒を身長順に並べ替え・グループ分けして遊ぶミニゲーム（非公式ファン制作）。",
+  "lang": "ja",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#eaeaf6",
+  "theme_color": "#2f8fb5",
+  "icons": [
+    {
+      "src": "./icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "./icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "./icons/maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

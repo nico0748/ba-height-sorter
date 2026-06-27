@@ -100,7 +100,7 @@ export function makeSortRound(difficulty, count) {
     return finalizeSort(picked)
   }
 
-  if (difficulty === 'hard') {
+  if (difficulty === 'hard' || difficulty === 'extreme' || difficulty === 'insane') {
     // ソート済み配列から連続する n 名の窓 → 身長が密集。
     // ただし need 種類以上の身長を含む窓に限定する。
     const windows = []
@@ -150,7 +150,11 @@ export function makeGroupRound(difficulty, count) {
       const r = s.height % 10
       return r >= 3 && r <= 6 // 中央寄り
     })
-  } else if (difficulty === 'hard') {
+  } else if (
+    difficulty === 'hard' ||
+    difficulty === 'extreme' ||
+    difficulty === 'insane'
+  ) {
     pool = ALL.filter((s) => {
       const r = s.height % 10
       return r <= 1 || r >= 8 // 境界寄り

@@ -7,3 +7,11 @@ dist
 vite.config.js.timestamp-*
 vite.config.*.timestamp-*
 .vite
+
+# 環境変数（秘匿）
+.env
+.env.local
+.env.*.local
+# Supabase CLI
+supabase/.branches
+supabase/.temp
